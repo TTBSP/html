@@ -2,57 +2,45 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ODPT Try Page</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 50px;
-      background-color: #f5f5f5;
-    }
-    #status {
-      font-size: 28px;
-      margin: 20px;
-      font-weight: bold;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-  </style>
+  <title>My Test Site</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <h1>ODPT チャレンジ テストページ</h1>
+  <header>
+    <h1>My Static Website</h1>
+    <p>GitHub Pages + Cloudflare Ready</p>
+  </header>
 
-  <div id="status">状態: 取得待ち</div>
-  <div id="timer">次回更新まで: 30 秒</div>
+  <nav>
+    <a href="#about">About</a>
+    <a href="#features">Features</a>
+    <a href="#contact">Contact</a>
+  </nav>
 
-  <button onclick="updateStatus()">手動更新</button>
+  <section id="about" class="card">
+    <h2>About</h2>
+    <p>これは静的HTMLで作られたシンプルなサイトです。</p>
+  </section>
 
-  <script>
-    let countdown = 30;
+  <section id="features" class="card">
+    <h2>Features</h2>
+    <ul>
+      <li>レスポンシブデザイン</li>
+      <li>ホバーアニメーション</li>
+      <li>グラデーション背景</li>
+    </ul>
+  </section>
 
-    function updateStatus() {
-      const states = ["OPEN", "CLOSED"];
-      const randomState = states[Math.floor(Math.random() * states.length)];
-      document.getElementById("status").innerText = "状態: " + randomState;
-      countdown = 30;
-    }
+  <section id="contact" class="card">
+    <h2>Contact</h2>
+    <button onclick="alert('Hello!')">Click Me</button>
+  </section>
 
-    function timerLoop() {
-      countdown--;
-      document.getElementById("timer").innerText = 
-        "次回更新まで: " + countdown + " 秒";
-
-      if (countdown <= 0) {
-        updateStatus();
-      }
-    }
-
-    setInterval(timerLoop, 1000);
-  </script>
+  <footer>
+    <p>© 2026 My Site</p>
+  </footer>
 
 </body>
 </html>
