@@ -1,46 +1,21 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>My Test Site</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Realtime Train API</title>
 </head>
 <body>
+<h2>Train Info</h2>
+<button onclick="load()">取得</button>
+<pre id="out"></pre>
 
-  <header>
-    <h1>My Static Website</h1>
-    <p>GitHub Pages + Cloudflare Ready</p>
-  </header>
-
-  <nav>
-    <a href="#about">About</a>
-    <a href="#features">Features</a>
-    <a href="#contact">Contact</a>
-  </nav>
-
-  <section id="about" class="card">
-    <h2>About</h2>
-    <p>これは静的HTMLで作られたシンプルなサイトです。</p>
-  </section>
-
-  <section id="features" class="card">
-    <h2>Features</h2>
-    <ul>
-      <li>レスポンシブデザイン</li>
-      <li>ホバーアニメーション</li>
-      <li>グラデーション背景</li>
-    </ul>
-  </section>
-
-  <section id="contact" class="card">
-    <h2>Contact</h2>
-    <button onclick="alert('Hello!')">Click Me</button>
-  </section>
-
-  <footer>
-    <p>© 2026 My Site</p>
-  </footer>
-
+<script>
+async function load(){
+  const res = await fetch("https://your-worker.workers.dev/api");
+  const data = await res.json();
+  document.getElementById("out").textContent =
+    JSON.stringify(data, null, 2);
+}
+</script>
 </body>
 </html>
