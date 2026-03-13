@@ -2,20 +2,29 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Realtime Train API</title>
+<title>Train API Test</title>
+<style>
+body { font-family: system-ui; margin: 40px; background:#111; color:#eee; }
+button { padding:10px 16px; font-size:16px; cursor:pointer; }
+pre { background:#222; padding:16px; margin-top:20px; overflow:auto; }
+</style>
 </head>
 <body>
-<h2>Train Info</h2>
-<button onclick="load()">取得</button>
-<pre id="out"></pre>
+
+<h2>Realtime Train API</h2>
+<button id="btn">取得</button>
+<pre id="out">Waiting...</pre>
 
 <script>
-async function load(){
-  const res = await fetch("https://your-worker.workers.dev/api");
+const API_URL = "https://trainapi.tt9549149.workers.dev/api";
+
+document.getElementById("btn").onclick = async () => {
+  const res = await fetch(API_URL);
   const data = await res.json();
   document.getElementById("out").textContent =
     JSON.stringify(data, null, 2);
-}
+};
 </script>
+
 </body>
 </html>
