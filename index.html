@@ -9,26 +9,21 @@ button{padding:10px 20px;font-size:16px}
 pre{background:#222;padding:15px;margin-top:20px}
 </style>
 </head>
-
 <body>
-
 <h2>Train API Test</h2>
 <button onclick="load()">取得</button>
 <pre id="out">Waiting...</pre>
 
 <script>
 async function load(){
-
-  const res = await fetch(
-    "https://train-api-pre.tt9549149.workers.dev/api"
-  );
-
-  const data = await res.json();
-
-  document.getElementById("out").textContent =
-    JSON.stringify(data,null,2);
+  const res = await fetch("https://train-api-pre.tt9549149.workers.dev/api");
+  try {
+    const data = await res.json();
+    document.getElementById("out").textContent = JSON.stringify(data,null,2);
+  } catch(e){
+    document.getElementById("out").textContent = "取得失敗: "+e;
+  }
 }
 </script>
-
 </body>
 </html>
