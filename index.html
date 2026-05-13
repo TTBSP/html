@@ -2,51 +2,53 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ODPT API Test</title>
+    <title>ODPT API カスタム検索</title>
     <style>
         body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; }
-        .controls { display: flex; gap: 10px; margin-bottom: 20px; }
-        button { padding: 12px; cursor: pointer; background: #444; color: #fff; border: 1px solid #666; border-radius: 4px; }
-        button:hover { background: #555; }
+        .input-group { margin-bottom: 20px; background: #222; padding: 15px; border-radius: 8px; }
+        input { 
+            width: 80%; padding: 10px; background: #333; color: #fff; 
+            border: 1px solid #555; margin-bottom: 10px; border-radius: 4px;
+        }
+        .btn-group { display: flex; gap: 10px; }
+        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #0056b3; }
         pre { background: #222; padding: 15px; border-radius: 5px; overflow-x: auto; border: 1px solid #333; }
-        .loading { color: #ffad00; }
     </style>
 </head>
 <body>
 
-    <h2>ODPT データ取得 (via Cloudflare)</h2>
+    <h2>ODPT カスタム検索</h2>
     
-    <div class="controls">
-        <button onclick="getData('bus')">横浜市営バス 取得</button>
-        <button onclick="getData('flight')">日本航空 (JAL) 取得</button>
+    <div class="input-group">
+        <label>追加クエリ（例: &dc:title=35系統）</label><br>
+        <input type="text" id="extraQuery" placeholder="&パラメータ=値 の形式で入力">
+        
+        <div class="btn-group">
+            <button onclick="getData('bus')">バス取得</button>
+            <button onclick="getData('flight')">フライト取得</button>
+        </div>
     </div>
 
-    <pre id="out">ボタンを押すとデータが表示されます...</pre>
+    <pre id="out">結果がここに表示されます...</pre>
 
     <script>
     async function getData(type) {
         const out = document.getElementById("out");
+        const extra = document.getElementById("extraQuery").value;
+        
         out.textContent = "読み込み中...";
-        out.className = "loading";
 
-        // あなたのCloudflare WorkerのURL
-        const workerUrl = `https://train-api-pre.tt9549149.workers.dev/api?type=${type}`;
+        // 自由入力欄の値をURLに含める（特殊文字を安全に変換）
+        // Worker側で受け取るために ?type=...&extra=... という形にする
+        const workerUrl = `https://train-api-pre.tt9549149.workers.dev/api?type=${type}&extra=${encodeURIComponent(extra)}`;
 
         try {
             const res = await fetch(workerUrl);
             const data = await res.json();
-
-            if (!res.ok) {
-                out.textContent = `エラーが発生しました: ${data.error || res.statusText}`;
-                out.className = "";
-                return;
-            }
-
             out.textContent = JSON.stringify(data, null, 2);
-            out.className = "";
         } catch (e) {
-            out.textContent = "通信エラー: " + e.message;
-            out.className = "";
+            out.textContent = "エラー: " + e.message;
         }
     }
     </script>
