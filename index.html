@@ -2,55 +2,66 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ODPT API カスタム検索</title>
+    <title>ODPT URL Executor</title>
     <style>
         body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; }
-        .input-group { margin-bottom: 20px; background: #222; padding: 15px; border-radius: 8px; }
-        input { 
-            width: 80%; padding: 10px; background: #333; color: #fff; 
-            border: 1px solid #555; margin-bottom: 10px; border-radius: 4px;
+        .container { max-width: 800px; margin: 0 auto; }
+        textarea { 
+            width: 100%; height: 80px; background: #222; color: #76ff03; 
+            border: 1px solid #444; padding: 10px; border-radius: 4px; font-family: monospace;
         }
-        .btn-group { display: flex; gap: 10px; }
-        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
-        button:hover { background: #0056b3; }
-        pre { background: #222; padding: 15px; border-radius: 5px; overflow-x: auto; border: 1px solid #333; }
+        button { 
+            margin-top: 10px; padding: 12px 24px; cursor: pointer; 
+            background: #007bff; color: white; border: none; border-radius: 4px; width: 100%;
+        }
+        pre { background: #1a1a1a; padding: 15px; border-radius: 5px; overflow-x: auto; border: 1px solid #333; margin-top: 20px; }
+        .error { color: #ff5252; }
     </style>
 </head>
 <body>
 
-    <h2>ODPT カスタム検索</h2>
+<div class="container">
+    <h2>ODPT API URL 実行器</h2>
+    <p style="font-size: 0.9em; color: #ccc;">api.odpt.org のURLをそのまま貼り付けてください。トークンは自動で置換されます。</p>
     
-    <div class="input-group">
-        <label>追加クエリ（例: &dc:title=35系統）</label><br>
-        <input type="text" id="extraQuery" placeholder="&パラメータ=値 の形式で入力">
-        
-        <div class="btn-group">
-            <button onclick="getData('bus')">バス取得</button>
-            <button onclick="getData('flight')">フライト取得</button>
-        </div>
-    </div>
+    <textarea id="urlInput" placeholder="https://api.odpt.org/api/v4/..."></textarea>
+    <button onclick="executeApi()">APIを実行する</button>
 
-    <pre id="out">結果がここに表示されます...</pre>
+    <pre id="out">結果待ち...</pre>
+</div>
 
-    <script>
-    async function getData(type) {
-        const out = document.getElementById("out");
-        const extra = document.getElementById("extraQuery").value;
-        
-        out.textContent = "読み込み中...";
-
-        // 自由入力欄の値をURLに含める（特殊文字を安全に変換）
-        // Worker側で受け取るために ?type=...&extra=... という形にする
-        const workerUrl = `https://train-api-pre.tt9549149.workers.dev/api?type=${type}&extra=${encodeURIComponent(extra)}`;
-
-        try {
-            const res = await fetch(workerUrl);
-            const data = await res.json();
-            out.textContent = JSON.stringify(data, null, 2);
-        } catch (e) {
-            out.textContent = "エラー: " + e.message;
-        }
+<script>
+async function executeApi() {
+    const out = document.getElementById("out");
+    const inputUrl = document.getElementById("urlInput").value.trim();
+    
+    if(!inputUrl) {
+        out.textContent = "URLを入力してください。";
+        return;
     }
-    </script>
+
+    out.textContent = "通信中...";
+    out.classList.remove("error");
+
+    // Cloudflare Workerへ送信。typeパラメータは不要になったのでextraにURLを込める
+    const workerUrl = `https://train-api-pre.tt9549149.workers.dev/api?extra=${encodeURIComponent(inputUrl)}`;
+
+    try {
+        const res = await fetch(workerUrl);
+        const data = await res.json();
+
+        if (!res.ok) {
+            out.classList.add("error");
+            out.textContent = `エラー: ${data.message || data.error}`;
+            return;
+        }
+
+        out.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+        out.classList.add("error");
+        out.textContent = "通信エラーが発生しました。";
+    }
+}
+</script>
 </body>
 </html>
