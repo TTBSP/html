@@ -2,66 +2,116 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ODPT URL Executor</title>
+    <title>ODPT Text-Only Viewer</title>
     <style>
-        body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; padding: 20px; line-height: 1.5; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h2 { border-left: 5px solid #76ff03; padding-left: 15px; margin-bottom: 20px; }
+        
+        .input-box { background: #1a1a1a; padding: 20px; border-radius: 8px; border: 1px solid #333; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #bbb; }
+        
         textarea { 
-            width: 100%; height: 80px; background: #222; color: #76ff03; 
-            border: 1px solid #444; padding: 10px; border-radius: 4px; font-family: monospace;
+            width: 100%; height: 100px; background: #000; color: #76ff03; 
+            border: 1px solid #444; padding: 12px; border-radius: 4px; 
+            font-family: 'Consolas', monospace; box-sizing: border-box; resize: vertical;
         }
+        
         button { 
-            margin-top: 10px; padding: 12px 24px; cursor: pointer; 
-            background: #007bff; color: white; border: none; border-radius: 4px; width: 100%;
+            margin-top: 15px; padding: 12px; cursor: pointer; 
+            background: #76ff03; color: #000; border: none; border-radius: 4px; 
+            width: 100%; font-weight: bold; font-size: 16px; transition: 0.2s;
         }
-        pre { background: #1a1a1a; padding: 15px; border-radius: 5px; overflow-x: auto; border: 1px solid #333; margin-top: 20px; }
-        .error { color: #ff5252; }
+        button:hover { background: #64d802; box-shadow: 0 0 10px rgba(118, 255, 3, 0.4); }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; }
+
+        pre { 
+            background: #121212; padding: 20px; border-radius: 8px; 
+            overflow-x: auto; border: 1px solid #333; margin-top: 20px;
+            white-space: pre-wrap; word-wrap: break-word; font-size: 13px;
+        }
+        
+        .error-msg { color: #ff5252; background: rgba(255, 82, 82, 0.1); border: 1px solid #ff5252; padding: 15px; border-radius: 4px; }
+        .success-text { color: #76ff03; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>ODPT API URL 実行器</h2>
-    <p style="font-size: 0.9em; color: #ccc;">api.odpt.org のURLをそのまま貼り付けてください。トークンは自動で置換されます。</p>
+    <h2>🚆 ODPT API テキストビューアー</h2>
     
-    <textarea id="urlInput" placeholder="https://api.odpt.org/api/v4/..."></textarea>
-    <button onclick="executeApi()">APIを実行する</button>
+    <div class="input-box">
+        <label>API URLを貼り付けてください（api.odpt.org）</label>
+        <textarea id="urlInput" placeholder="https://api.odpt.org/api/v4/odpt:TrainInformation?odpt:operator=odpt.Operator:Tokyu&acl:consumerKey=YOUR_TOKEN"></textarea>
+        <button id="execBtn" onclick="executeApi()">データを取得して表示</button>
+    </div>
 
-    <pre id="out">結果待ち...</pre>
+    <div id="status"></div>
+    <pre id="out">ここに実行結果（JSON/テキスト）が表示されます...</pre>
 </div>
 
 <script>
 async function executeApi() {
     const out = document.getElementById("out");
-    const inputUrl = document.getElementById("urlInput").value.trim();
+    const btn = document.getElementById("execBtn");
+    const urlInput = document.getElementById("urlInput").value.trim();
     
-    if(!inputUrl) {
-        out.textContent = "URLを入力してください。";
+    if (!urlInput) {
+        alert("URLを入力してください");
         return;
     }
 
-    out.textContent = "通信中...";
-    out.classList.remove("error");
+    // UI状態のリセット
+    btn.disabled = true;
+    btn.textContent = "処理中...";
+    out.textContent = "Cloudflare Worker経由で通信しています...";
+    out.className = "";
 
-    // Cloudflare Workerへ送信。typeパラメータは不要になったのでextraにURLを込める
-    const workerUrl = `https://train-api-pre.tt9549149.workers.dev/api?extra=${encodeURIComponent(inputUrl)}`;
+    // Cloudflare WorkerのURL (あなたのWorkerのURLに書き換えてください)
+    const workerUrl = `https://train-api-pre.tt9549149.workers.dev/api?extra=${encodeURIComponent(urlInput)}`;
 
     try {
         const res = await fetch(workerUrl);
-        const data = await res.json();
+        const contentType = res.headers.get("Content-Type") || "";
 
-        if (!res.ok) {
-            out.classList.add("error");
-            out.textContent = `エラー: ${data.message || data.error}`;
-            return;
+        // 1. テキストとして扱える形式かチェック
+        // JSON, plain text, csv(GTFS-JPのtxt)が含まれているか
+        const isText = contentType.includes("json") || 
+                       contentType.includes("text") || 
+                       contentType.includes("csv");
+
+        if (!isText && res.ok) {
+            // バイナリ形式（PBF, ZIP, PNG等）の場合はエラーとして返す
+            throw new Error(`表示不可能なデータ形式です (${contentType})\nこのツールはテキスト形式のみ対応しています。`);
         }
 
-        out.textContent = JSON.stringify(data, null, 2);
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || `サーバーエラー: ${res.status}`);
+        }
+
+        // 2. テキストとして取得
+        const textData = await res.text();
+
+        try {
+            // JSONならパースして整形表示
+            const json = JSON.parse(textData);
+            out.textContent = JSON.stringify(json, null, 2);
+            out.classList.add("success-text");
+        } catch (e) {
+            // JSONでなければそのまま表示
+            out.textContent = textData;
+        }
+
     } catch (e) {
-        out.classList.add("error");
-        out.textContent = "通信エラーが発生しました。";
+        out.textContent = "【エラー】\n" + e.message;
+        out.classList.add("error-msg");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "データを取得して表示";
     }
 }
 </script>
+
 </body>
 </html>
