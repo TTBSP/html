@@ -67,27 +67,26 @@ async function executeApi() {
     out.textContent = "Cloudflare Worker経由で通信しています...";
     out.className = "";
 
-    // Cloudflare WorkerのURL (あなたのWorkerのURLに書き換えてください)
-    const workerUrl = `https://train-api-pre.tt9549149.workers.dev/api?extra=${encodeURIComponent(urlInput)}`;
+    // 【修正ポイント】末尾の /api を削除し、Workerのルートへ正しくパラメータを飛ばす
+    const workerUrl = `https://train-api-pre.tt9549149.workers.dev/?extra=${encodeURIComponent(urlInput)}`;
 
     try {
         const res = await fetch(workerUrl);
         const contentType = res.headers.get("Content-Type") || "";
 
         // 1. テキストとして扱える形式かチェック
-        // JSON, plain text, csv(GTFS-JPのtxt)が含まれているか
         const isText = contentType.includes("json") || 
                        contentType.includes("text") || 
                        contentType.includes("csv");
 
         if (!isText && res.ok) {
-            // バイナリ形式（PBF, ZIP, PNG等）の場合はエラーとして返す
             throw new Error(`表示不可能なデータ形式です (${contentType})\nこのツールはテキスト形式のみ対応しています。`);
         }
 
         if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.message || `サーバーエラー: ${res.status}`);
+            // エラー時、レスポンスがJSONでなければテキストとしてエラーメッセージを取得
+            const errText = await res.text().catch(() => "不明なエラー");
+            throw new Error(`サーバーエラー: ${res.status} (${errText})`);
         }
 
         // 2. テキストとして取得
